@@ -1,6 +1,6 @@
 export default function LoadingSpinner() {
   return (
-    <div className="flex flex-col items-center gap-4 py-12 fade-in">
+    <div className="flex flex-col items-center gap-4 py-12">
       <div className="spinner" />
       <div className="text-center">
         <p className="text-white/70 text-sm font-medium">Analyzing article...</p>
