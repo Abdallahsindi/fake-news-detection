@@ -1,177 +1,237 @@
 # Fake News Detection — Project Documentation
 
-**Status:** Phase 1 (Data Cleaning) — ✅ Complete
 **Last updated:** June 27, 2026
+**Purpose of this file:** A complete, standalone snapshot of this project. If you open a brand
+new chat with zero memory of this conversation, paste/upload this file first — it has everything
+needed to pick up exactly where things left off.
+
+---
+
+## 0. ONE-LINE STATUS
+
+✅ Phase 1 (Data Cleaning) — Done, verified, pushed to GitHub.
+⏳ Phase 2 (Model Training) — Not started yet. This is the very next step, no blockers.
+✅ GitHub repo — Created, private, Phase 1 files pushed successfully.
+⏳ Teammates — Invited, not yet accepted/active as of this writing.
 
 ---
 
 ## 1. Project Goal
 
 Build an AI model that reads a news article (title + body text) and predicts whether it is
-**Fake News** or **Factual News**. This is a binary text-classification problem.
+**Fake News** or **Factual News**. This is a binary text-classification problem, built as a
+group project (3 people) for a course, to be submitted/shown via a GitHub repository.
 
-The project is broken into phases:
+### Phase breakdown
 
 | Phase | What | Status |
 |---|---|---|
-| **1** | Clean & prepare the raw dataset | ✅ Done (this doc covers it) |
-| **2** | Vectorize text + train a classifier (e.g. Logistic Regression) | ⏳ Not started |
+| **1** | Clean & prepare the raw dataset | ✅ Done |
+| **2** | Vectorize text + train a classifier (e.g. Logistic Regression) | ⏳ Not started — next step |
 | **3** | Evaluate the model, tune it, maybe try other algorithms | ⏳ Not started |
 | **4** | (Optional) Wrap it in something usable — script, simple app, etc. | ⏳ Not started |
 
 ---
 
-## 2. Files in This Project
+## 2. Files in the Project
 
-| File | Purpose |
-|---|---|
-| `fake_news_data.csv` | **Original raw data.** Never modify this — always treat it as the source of truth. |
-| `01_Data_Cleaning.ipynb` | **Phase 1 notebook.** Loads the raw CSV, cleans it, saves the clean version. Fully commented. |
-| `fake_news_data_clean.csv` | **Output of Phase 1.** This is what Phase 2 will load and build on. |
-| `PROJECT_DOCUMENTATION.md` | This file. |
+| File | Purpose | Status |
+|---|---|---|
+| `fake_news_data.csv` | **Original raw data.** Never modify — always treat as source of truth. | ✅ On GitHub |
+| `01_Data_Cleaning.ipynb` | **Phase 1 notebook.** Loads raw CSV, cleans it, saves clean version. Fully commented. | ✅ On GitHub |
+| `fake_news_data_clean.csv` | **Output of Phase 1.** Starting point for Phase 2. | ✅ On GitHub |
+| `PROJECT_DOCUMENTATION.md` | This file. | ✅ On GitHub (keep updating it each session) |
+| *(Phase 2 notebook — not yet created)* | Will vectorize text + train + evaluate a classifier | ⏳ To be built |
 
-**If you come back to this later:** open `01_Data_Cleaning.ipynb` to see exactly how the data was
-cleaned, and use `fake_news_data_clean.csv` as the starting point for Phase 2 — you don't need to
-re-run the cleaning notebook unless you want to change something about the cleaning logic itself.
+**If picking this up cold:** open `01_Data_Cleaning.ipynb` to see exactly how the data was cleaned.
+Use `fake_news_data_clean.csv` as the input for Phase 2 — no need to re-run Phase 1 unless you
+want to change the cleaning logic itself.
 
 ---
 
-## 3. The Raw Dataset
+## 3. The Raw Dataset — What We Found
 
 - **198 rows, 4 columns:** `title`, `text`, `date`, `fake_or_factual`
-- **Source:** uploaded CSV, appears to be a mix of mainstream news and fake/clickbait articles
-  (titles range from neutral, e.g. *"Britain says window to restore Northern Ireland devolution
-  closing rapidly"*, to clearly editorialized, e.g. *"HOLLYWEIRD LIB SUSAN SARANDON..."*).
-- **Label balance:** 100 Factual News / 98 Fake News — close to 50/50, which is good. It means we
-  won't need special techniques for class imbalance later, and plain accuracy will be a meaningful
-  metric in Phase 2/3.
+- **Label balance:** 100 Factual News / 98 Fake News — close to 50/50 (good — no class imbalance
+  problem to deal with later; plain accuracy will be a meaningful metric in Phase 2/3).
 
-### Data quality issues found during inspection
+### Data quality issues found and fixed during Phase 1
 
-1. **No missing values** (`isnull().sum()` was 0 across all columns) and **no duplicate rows**.
-   Good news — but we still ran all the standard checks rather than assuming this.
-2. **Inconsistent whitespace** — many `title` and `date` values had leading/trailing spaces
-   (e.g. `" Elijah Cummings Called Trump..."`). Fixed with `.str.strip()`.
-3. **Mixed date formats** — the `date` column has two different formats in the same column:
-   - Full month names: `"September 18, 2017"`
-   - Abbreviated month names: `"Dec 30, 2015"`
-   Fixed using `pd.to_datetime(df['date'], format='mixed', errors='coerce')`, which lets pandas
-   detect each row's format individually. Result: 0 unparseable dates.
-4. **Smart/curly quotes** (`’ ‘ “ ”`) appear in several titles (e.g. `"Jesus' Family"` uses a curly
-   apostrophe, not a straight one). Python's built-in `string.punctuation` doesn't include these
-   Unicode characters, so they had to be added manually to the punctuation-stripping step —
-   otherwise words like `"here's"` would incorrectly survive cleaning as `"here's"` instead of
-   becoming `"heres"`.
-5. **Missing apostrophes in the raw article text** — e.g. `"who s not paying attention"` instead
-   of `"who's not paying attention"`. This looks like a scraping/export artifact in the original
-   data, not something we caused. We deliberately did **not** try to guess and reinsert missing
-   apostrophes, since that risks introducing new errors. It doesn't actually hurt the pipeline,
-   since punctuation gets stripped during NLP cleaning anyway.
+1. **No missing values, no duplicate rows** — confirmed via `isnull().sum()` and `.duplicated()`,
+   not assumed.
+2. **Inconsistent whitespace** — many `title`/`date` values had leading/trailing spaces. Fixed
+   with `.str.strip()`.
+3. **Mixed date formats in the same column** — some rows used full month names
+   (`"September 18, 2017"`), others abbreviated (`"Dec 30, 2015"`). Fixed using
+   `pd.to_datetime(df['date'], format='mixed', errors='coerce')`. Result: 0 unparseable dates.
+4. **Smart/curly quotes** (`’ ‘ “ ”`) in several titles — not covered by Python's standard
+   `string.punctuation`, so they were added manually to the punctuation-stripping step.
+5. **Missing apostrophes in raw article text** (e.g. `"who s not paying attention"` instead of
+   `"who's not paying attention"`) — looks like a scraping/export artifact in the original data.
+   Deliberately **not** "fixed" by guessing reinsertions (too risky for accuracy); doesn't hurt the
+   pipeline since punctuation gets stripped during NLP cleaning anyway.
 
 ---
 
-## 4. What the Cleaning Pipeline Does (Phase 1 Summary)
+## 4. What the Phase 1 Cleaning Pipeline Does
 
-Step by step, in the order they appear in `01_Data_Cleaning.ipynb`:
+Step by step, as implemented in `01_Data_Cleaning.ipynb`:
 
-1. **Load & inspect** — `pd.read_csv()`, then `.head()`, `.info()`, `.shape` to understand the data.
-2. **Check missing data** — `.isnull().sum()` (and an extra check for empty strings, which
-   `.isnull()` doesn't catch).
-3. **Check duplicates** — `.duplicated()` on the full row and on `title`+`text` specifically.
+1. **Load & inspect** — `pd.read_csv()`, then `.head()`, `.info()`, `.shape`.
+2. **Check missing data** — `.isnull().sum()` + an extra check for empty strings.
+3. **Check duplicates** — `.duplicated()` on full rows and on `title`+`text` specifically.
 4. **Strip whitespace** — `.str.strip()` on every text column.
-5. **Encode the label** — map `"Fake News"` → `1`, `"Factual News"` → `0`, into a new `label` column.
-   (Models need numbers, not text, as the target to predict.)
-6. **Parse dates** — convert the `date` column from mixed-format strings into real `datetime`
-   objects, then extract `year` and `month` as separate columns.
-7. **Clean the text (NLP step)** — a custom `clean_text()` function applied to both `title` and
-   `text`, producing `clean_title` and `clean_text`. This:
-   - lowercases everything
-   - removes URLs and email addresses
-   - removes HTML tags
-   - removes punctuation (including curly quotes)
-   - removes standalone digits
-   - collapses extra whitespace
-   - removes English stopwords (`"the"`, `"and"`, `"is"`, etc.)
-   - drops leftover single-character tokens
-8. **Feature engineering** — a few cheap derived numeric columns that might be useful later:
-   - `text_length` — character count of the raw article
-   - `word_count` — word count of the cleaned article
-   - `title_upper_ratio` — what fraction of the title's letters are uppercase (fake/clickbait
-     headlines are sometimes ALL CAPS or partially capitalized for emphasis)
-9. **Final review & save** — reorder columns logically, run final sanity checks, save to
+5. **Encode the label** — `"Fake News"` → `1`, `"Factual News"` → `0`, into a new `label` column.
+6. **Parse dates** — mixed-format strings → real `datetime` objects, then extract `year`/`month`.
+7. **Clean the text (NLP step)** — custom `clean_text()` function applied to `title` and `text`,
+   producing `clean_title` and `clean_text`. Lowercases, removes URLs/emails/HTML tags/punctuation
+   (including curly quotes)/digits, collapses whitespace, removes English stopwords, drops
+   single-character leftovers.
+8. **Feature engineering** — adds `text_length` (raw character count), `word_count` (cleaned word
+   count), `title_upper_ratio` (fraction of title letters that are uppercase — a possible
+   clickbait/fake-news signal).
+9. **Final review & save** — reorders columns, runs final sanity checks, saves to
    `fake_news_data_clean.csv`.
 
-### Why no external NLP library (like NLTK)?
+### Why no external NLP library (e.g. NLTK)?
 
-The sandbox this was built in has no internet access, so NLTK's stopword/corpora downloads aren't
-available. Instead, the stopword list is defined directly in the notebook as a plain Python set.
-This makes the notebook **fully self-contained** — it will run on any machine with just `pandas`
-and `numpy` installed, no extra downloads required. If you later want to swap in NLTK or spaCy for
-more sophisticated text processing (lemmatization, POS tagging, etc.), that's a reasonable Phase 2
-upgrade, not something Phase 1 needs.
-
----
-
-## 5. How This Connects to the Course Material
-
-Per your request, the cleaning notebook deliberately mirrors techniques from your course notebooks
-rather than introducing unfamiliar patterns:
-
-| Technique | Used in cleaning notebook | Also appears in course file |
-|---|---|---|
-| `.head()`, `.info()`, `.describe()` | Section 1 | `Logistic_Regression_Project`, `DataFrames` |
-| `.isnull().sum()`, missing-data handling | Section 2 | `Missing_Data` |
-| `.duplicated()` | Section 3 | (standard DataFrame method, same family as `DataFrames`) |
-| `.str.strip()` / string methods | Section 4 | `Python_Exercises_-_Solutions` (e.g. `s.split()`) |
-| `.apply()` with a custom function | Sections 7–8 | `DataFrames`, `Groupby` |
-| Writing custom `def` functions | Section 7 (`clean_text`), Section 8 (`uppercase_ratio`) | `Lab` (`welcome()`, `sum()`), `Python_Exercises_-_Solutions` (`domainGet()`, `findDog()`, `countDog()`, `caught_speeding()`) |
-| `lambda` functions | Section 8 (`word_count` calc) | `Python_Exercises_-_Solutions` (`filter(lambda ...)`) |
-| `pd.to_datetime()` | Section 6 | (standard pandas date handling) |
-| `np.nan` / NumPy awareness | Section 2 discussion | `Numpy`, `Missing_Data` |
-| `.to_csv()` | Section 10 | `Data_Input_and_Output` |
-
-The **only genuinely new material** (not covered in the course) is the NLP-specific text cleaning
-in Section 7 — lowercasing, punctuation/stopword removal — because none of the course's datasets
-(salaries, ecommerce, advertising) involved free-form natural language text. That's a necessary
-addition for this specific project, clearly marked in the notebook as **[NLP STEP]**.
+The environment this was built in has no internet access for downloading NLTK's corpora, so the
+stopword list is defined directly as a plain Python set inside the notebook. This makes the
+notebook **fully self-contained** — runs anywhere with just `pandas` + `numpy`, no extra downloads.
+A reasonable Phase 2/3 upgrade later would be swapping in NLTK/spaCy for lemmatization if you want
+to go further, but it's not required.
 
 ---
 
-## 6. Validation Performed
+## 5. How This Maps to the Course Material
 
-Before delivering, the entire notebook was extracted and executed end-to-end (not just visually
-checked) to confirm it runs cleanly:
+| Technique used | Course file it came from |
+|---|---|
+| `.head()`, `.info()`, `.describe()` | `02-Logistic_Regression_Project`, `03-DataFrames` |
+| `.isnull().sum()`, missing-data handling | `04-Missing_Data` |
+| `.duplicated()` | Standard DataFrame method, same family as `03-DataFrames` |
+| `.str.strip()` / string methods | `Python_Exercises_-_Solutions` (e.g. `s.split()`) |
+| `.apply()` with a custom function | `03-DataFrames`, `05-Groupby` |
+| Writing custom `def` functions | `Lab` (`welcome()`, `sum()`), `Python_Exercises_-_Solutions` (`domainGet()`, `findDog()`, `countDog()`, `caught_speeding()`) |
+| `lambda` functions | `Python_Exercises_-_Solutions` (`filter(lambda ...)`) |
+| `pd.to_datetime()` | Standard pandas date handling |
+| `np.nan` / NumPy awareness | `Numpy`, `04-Missing_Data` |
+| `.to_csv()` | `08-Data_Input_and_Output` |
+
+**The only genuinely new material** beyond the course is the NLP text-cleaning in Section 7
+(lowercasing, punctuation/stopword removal) — none of the course's datasets (salaries, ecommerce,
+advertising) involved free-form natural language text, so this addition was necessary.
+
+---
+
+## 6. Validation Already Performed (Phase 1)
+
+The entire notebook was extracted and executed end-to-end (not just visually checked):
 
 - ✅ 198 rows in → 198 rows out (no rows accidentally dropped)
-- ✅ 0 missing values in any column, before or after cleaning
-- ✅ 0 unparseable dates (down from an initial parsing issue, now fixed with `format='mixed'`)
+- ✅ 0 missing values, before or after cleaning
+- ✅ 0 unparseable dates (after fixing with `format='mixed'`)
 - ✅ 0 duplicate rows
-- ✅ 0 empty `clean_text` values after cleaning (cleaning didn't wipe any article down to nothing)
+- ✅ 0 empty `clean_text` values after cleaning
 - ✅ Label balance preserved: 100 Factual / 98 Fake
-- ✅ Output CSV (`fake_news_data_clean.csv`) loads back correctly with all 12 expected columns
+- ✅ Output CSV loads back correctly with all 12 expected columns
 
 ---
 
-## 7. Plan for Phase 2 (Next Steps)
+## 7. GitHub Setup — Full Status
 
-When you're ready to continue, Phase 2 should:
+### What's done
 
-1. **Load `fake_news_data_clean.csv`** (not the raw file).
-2. **Split into train/test sets** — same `train_test_split` pattern from the Logistic Regression
-   course project.
-3. **Vectorize the text** — turn `clean_text` into numeric features the model can use. Common
-   choices:
-   - `CountVectorizer` (bag-of-words / word counts)
-   - `TfidfVectorizer` (weights words by how distinctive they are — usually a better starting point)
-4. **Train a baseline classifier** — Logistic Regression is the natural first choice since it's
-   already covered in the course (`02-Logistic_Regression_Project`), and works well as a baseline
-   for text classification.
-5. **Evaluate** — accuracy, confusion matrix, precision/recall (since this is a binary
-   classification problem, all of these are meaningful given the balanced classes).
-6. **Iterate** — try other models (Naive Bayes is a classic baseline for text), tune
-   hyperparameters, possibly bring in the `text_length`, `word_count`, and `title_upper_ratio`
-   features alongside the vectorized text.
+- **Git installed** on Windows (version 2.54.0), identity configured (`user.name`, `user.email`
+  both verified set).
+- **Private repository created** on GitHub (visible only to invited collaborators).
+- **Local project folder:** `C:\Users\alye0\OneDrive\Desktop\AMIT\Project`
+  (Note: this folder is under OneDrive due to a Windows default that syncs Desktop automatically —
+  this is harmless for Git, just something to be aware of if odd file-lock errors ever appear;
+  retry the command if so.)
+- **Repo initialized and connected** (`git init`, `git remote add origin ...`, `git branch -M main`).
+- **Pulled GitHub's initial README** with `git pull origin main --allow-unrelated-histories`
+  (needed because the repo was created with "Add a README file" checked).
+- **Phase 1 files committed and pushed successfully:**
+  - `fake_news_data.csv`
+  - `fake_news_data_clean.csv`
+  - `01_Data_Cleaning.ipynb`
+  - `PROJECT_DOCUMENTATION.md`
+  - Confirmed via `git push -u origin main` actually transferring objects (not "Everything
+    up-to-date" — a real push happened).
 
-This documentation file should be enough to pick the project back up in a fresh conversation —
-just re-upload `fake_news_data_clean.csv` (or re-run the Phase 1 notebook on the raw CSV) and
-reference this file for context on what's already been decided and why.
+### What's NOT done yet
+
+- **Teammates invited via Settings → Collaborators, but not yet accepted/active.** Once you have
+  their GitHub usernames, list them here:
+  - Teammate 1 GitHub username: `___________`
+  - Teammate 2 GitHub username: `___________`
+- Once they accept the invite, each of them needs to run (one time):
+  ```bash
+  git clone https://github.com/yourusername/fake-news-detection.git
+  ```
+  And afterward, whenever someone pushes new work, the others just run:
+  ```bash
+  git pull
+  ```
+  to get the latest files.
+- **No `README.md` (repo front page) or `.gitignore` set up yet** — optional polish, not urgent.
+  A `.gitignore` would prevent junk files (like Jupyter checkpoint folders) from accidentally
+  getting committed later.
+
+### Day-to-day workflow going forward (for all 3 of you)
+
+1. Pull first, to make sure you have the latest: `git pull`
+2. Do your work (edit/add files)
+3. Stage your changes: `git add .`
+4. Commit with a clear message: `git commit -m "describe what you did"`
+5. Push: `git push`
+
+If two people edit the *same* file at the *same* time before pushing, Git may report a "merge
+conflict" — this hasn't happened yet, but if it does in a future session, that's a normal Git
+situation with a standard fix; just flag it and ask for help resolving it rather than worrying.
+
+---
+
+## 8. Plan for Phase 2 (Next Step — Not Started Yet)
+
+This is the very next thing to do, whenever you're back. Plan:
+
+1. **Load `fake_news_data_clean.csv`** (not the raw file) into a new notebook
+   (e.g. `02_Model_Training.ipynb`).
+2. **Split into train/test sets** — same `train_test_split` pattern from the course's
+   `02-Logistic_Regression_Project`.
+3. **Vectorize the text** — turn `clean_text` into numeric features the model can use:
+   - `CountVectorizer` (bag-of-words / word counts), or
+   - `TfidfVectorizer` (weights words by how distinctive they are — usually the better starting
+     point for this kind of task)
+4. **Train a baseline classifier** — Logistic Regression, since it's already covered in the
+   course and is a strong, simple baseline for text classification.
+5. **Evaluate** — accuracy, confusion matrix, precision/recall (meaningful here since classes
+   are balanced).
+6. **Iterate** — try other models (Naive Bayes is a classic text-classification baseline), tune
+   hyperparameters, possibly combine the vectorized text with the extra numeric features already
+   built in Phase 1 (`text_length`, `word_count`, `title_upper_ratio`).
+
+### Important reminder for whoever does Phase 2
+
+None of the course files cover text vectorization — that's the one genuinely new technique needed
+here, since all the course datasets (Salaries, Ecommerce, Advertising) were already numeric. The
+rest of Phase 2 (train/test split, `.fit()`, `.predict()`, evaluation metrics) directly reuses what
+was practiced in `02-Logistic_Regression_Project`.
+
+---
+
+## 9. How to Resume in a Fresh Conversation
+
+If starting a new chat with no memory of this one:
+
+1. Upload this `PROJECT_DOCUMENTATION.md` file first.
+2. Upload `fake_news_data_clean.csv` (and `01_Data_Cleaning.ipynb` if relevant).
+3. Say something like: "Continue this project — start Phase 2: vectorize the text and train a
+   Logistic Regression model, following the plan in section 8 of the attached documentation."
+4. Fill in the teammate GitHub usernames in Section 7 once you have them, so the new chat can help
+   with any further Git/GitHub steps (like resolving a merge conflict, or writing the README/`.gitignore`).
+
+**Remember to ask for this documentation file to be updated again at the end of every future
+session**, so it stays an accurate, current snapshot of the whole project.
