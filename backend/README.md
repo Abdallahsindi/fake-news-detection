@@ -1,6 +1,6 @@
 # Fake News Detection API
 
-FastAPI backend that serves predictions from a trained Random Forest classifier with TF-IDF vectorization.
+FastAPI backend that serves predictions from a trained Keras feedforward neural network with TF-IDF vectorization.
 
 ## Local Development
 
@@ -67,5 +67,5 @@ Open `http://localhost:8000/docs` in your browser.
 ## Architecture
 
 ```
-User Input → Text Cleaning → TF-IDF Vectorizer → Random Forest → Prediction + Confidence
+User Input → Text Cleaning → TF-IDF Vectorizer → Keras FNN → Prediction + Confidence
 ```
