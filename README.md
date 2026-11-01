@@ -43,7 +43,6 @@ Measured on the held-out test split of the bundled 199-article dataset:
 | `fake_news_data.csv` | Raw dataset (title, text, date, label) |
 | `fake_news_data_clean.csv` | Cleaned dataset used by the notebooks |
 | `Project_Report_Abdullah_Sindi.pdf` | Written report |
-| `Neural_Networks_Project_QA.pdf` | Q&A prepared for the project defence |
 | `Live_Demo_Test_QA.pdf` | Live demo script and test questions |
 
 ## Running locally
