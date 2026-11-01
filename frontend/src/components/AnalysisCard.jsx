@@ -1,4 +1,4 @@
-export default function AnalysisCard({ text, setText, onSubmit, loading, textareaRef }) {
+export default function AnalysisCard({ text, setText, onSubmit, loading, textareaRef, error, onDismissError }) {
   return (
     <div className="w-full max-w-4xl mx-auto flex flex-col items-center rounded-3xl">
       <div className="glass-card rounded-3xl p-10 w-full fade-in-up">
@@ -22,7 +22,21 @@ export default function AnalysisCard({ text, setText, onSubmit, loading, textare
             </div>
           </div>
 
-          <div className="flex justify-center mt-8 w-full">
+          {error && (
+            <div className="w-full mt-6 flex items-start gap-3 bg-red-500/10 border border-red-500/25 rounded-xl px-4 py-3">
+              <svg className="w-5 h-5 text-red-400 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v4m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
+              </svg>
+              <p className="text-red-300 text-sm flex-1">{error}</p>
+              <button type="button" onClick={onDismissError} className="text-red-400/60 hover:text-red-300 transition-colors cursor-pointer shrink-0">
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+          )}
+
+          <div className="flex justify-center mt-6 w-full">
             <button type="submit" disabled={loading || !text.trim()} className="btn-primary w-full max-w-md h-14 text-lg font-semibold rounded-xl">
               {loading ? (
                 <span className="flex items-center justify-center gap-3">

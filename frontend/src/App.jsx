@@ -27,9 +27,9 @@ function App() {
       const data = await predictNews(text)
       setResult(data)
     } catch (err) {
-      if (err.code === 'ERR_NETWORK') { setError('Could not reach the backend. Make sure the API server is running on port 8000.') }
-      else if (err.response?.status === 400) { setError(err.response.data.detail || 'Invalid input.') }
-      else { setError('Something went wrong. Please try again.') }
+      if (err.code === 'ERR_NETWORK') { setError('The analysis service is temporarily unavailable. Please try again in a moment.') }
+      else if (err.response?.status === 400) { setError(err.response.data.detail || 'Please enter more text to analyze.') }
+      else { setError('Analysis failed. Please try again.') }
     } finally { setLoading(false) }
   }
 
@@ -70,22 +70,15 @@ function App() {
 
               {showAnalysis && (
                 <section className="w-full flex justify-center mt-16">
-                  <AnalysisCard text={text} setText={setText} onSubmit={handleSubmit} loading={loading} textareaRef={textareaRef} />
+                  <AnalysisCard
+                    text={text} setText={setText} onSubmit={handleSubmit}
+                    loading={loading} textareaRef={textareaRef}
+                    error={error} onDismissError={() => setError('')}
+                  />
                 </section>
               )}
 
               {showLoading && <LoadingSpinner />}
-
-              {showError && (
-                <section className="w-full flex justify-center mt-16">
-                  <div className="glass-card p-5 border-red-500/20 bg-red-500/5 max-w-4xl w-full">
-                    <div className="flex items-start gap-3">
-                      <span className="text-red-400 text-lg shrink-0 mt-0.5">⚠️</span>
-                      <p className="text-red-300 text-sm">{error}</p>
-                    </div>
-                  </div>
-                </section>
-              )}
 
               {showResult && (
                 <section className="w-full flex justify-center mt-16">

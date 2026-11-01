@@ -4,6 +4,8 @@ import sys
 import traceback
 
 import joblib
+import numpy as np
+import tensorflow as tf
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -16,8 +18,8 @@ logger = logging.getLogger(__name__)
 
 app = FastAPI(
     title="Fake News Detection API",
-    description="Predict whether a news article is Fake News or Factual News using a trained Random Forest model.",
-    version="1.0.0",
+    description="Predict whether a news article is Fake News or Factual News using a Feedforward Neural Network (Keras/TensorFlow).",
+    version="2.0.0",
 )
 
 app.add_middleware(
@@ -28,7 +30,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-MODEL_PATH = os.path.join(os.path.dirname(__file__), "model.pkl")
+MODEL_PATH = os.path.join(os.path.dirname(__file__), "nn_model.keras")
 VECTORIZER_PATH = os.path.join(os.path.dirname(__file__), "vectorizer.pkl")
 
 model = None
@@ -45,8 +47,8 @@ def startup():
             sys.exit(1)
         logger.info("Loading %s from %s...", label, path)
     try:
-        model = joblib.load(MODEL_PATH)
-        logger.info("model.pkl loaded successfully (type=%s)", type(model).__name__)
+        model = tf.keras.models.load_model(MODEL_PATH)
+        logger.info("nn_model.keras loaded successfully (input_shape=%s)", model.input_shape)
         vectorizer = joblib.load(VECTORIZER_PATH)
         logger.info("vectorizer.pkl loaded successfully (vocab_size=%d)", len(vectorizer.vocabulary_))
     except Exception as e:
@@ -85,13 +87,21 @@ def predict(request: PredictRequest):
         if not cleaned:
             raise HTTPException(status_code=400, detail="Input text is empty after cleaning")
 
-        vectorized = vectorizer.transform([cleaned])
-        probs = model.predict_proba(vectorized)[0]
-        prediction = model.predict(vectorized)[0]
-        label = "Fake News" if prediction == 1 else "Factual News"
-        confidence = round(float(max(probs)), 4)
+        word_count = len(cleaned.split())
+        if word_count < 15:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Text too short ({word_count} meaningful words found after cleaning). "
+                       f"Please paste a full news article — minimum 15 words required for a reliable prediction."
+            )
 
-        logger.info("Prediction: %s (confidence=%.4f, cleaned_length=%d)", label, confidence, len(cleaned))
+        # TF-IDF → dense array (Keras Dense layers require dense input)
+        X = vectorizer.transform([cleaned]).toarray().astype(np.float32)
+        prob = float(model.predict(X, verbose=0)[0][0])
+        label = "Fake News" if prob >= 0.5 else "Factual News"
+        confidence = round(prob if prob >= 0.5 else 1.0 - prob, 4)
+
+        logger.info("Prediction: %s (prob=%.4f, confidence=%.4f, cleaned_length=%d)", label, prob, confidence, len(cleaned))
         return PredictResponse(prediction=label, confidence=confidence)
 
     except HTTPException:
